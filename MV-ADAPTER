@@ -1,0 +1,126 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "gpuType": "T4"
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    },
+    "accelerator": "GPU"
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "intro_md"
+      },
+      "source": [
+        "# **MV-Adapter: Google Colab Setup**\n",
+        "\n",
+        "This notebook installs the necessary dependencies (PyTorch 2.2.2, CUDA 11.8, nvdiffrast) and runs the MV-Adapter demo.\n",
+        "\n",
+        "**Important:** Ensure your Runtime is set to **GPU** (Runtime > Change runtime type > T4 GPU)."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "step1_deps"
+      },
+      "outputs": [],
+      "source": [
+        "# @title 1. Install Dependencies & System Libraries\n",
+        "import os\n",
+        "\n",
+        "print(\"⏳ Installing System OpenGL dependencies...\")\n",
+        "!apt-get update > /dev/null\n",
+        "!apt-get install -y -qq libgl1-mesa-glx libgl1-mesa-dev libegl1-mesa-dev > /dev/null\n",
+        "\n",
+        "print(\"⏳ Cleaning old Python dependencies...\")\n",
+        "!pip uninstall -y torch torchvision diffusers transformers accelerate timm einops opencv-python nvdiffrast 2>/dev/null\n",
+        "\n",
+        "print(\"⏳ Installing PyTorch 2.2.2 (CUDA 11.8)...\")\n",
+        "!pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cu118 > /dev/null\n",
+        "\n",
+        "print(\"⏳ Installing nvdiffrast (Pre-built)...\")\n",
+        "!pip install nvdiffrast-cu11 > /dev/null\n",
+        "\n",
+        "print(\"⏳ Installing remaining requirements...\")\n",
+        "!pip install diffusers==0.26.3 transformers accelerate timm einops imageio[ffmpeg] opencv-python gradio ninja > /dev/null\n",
+        "\n",
+        "print(\"✅ Environment Setup Complete.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "step2_clone"
+      },
+      "outputs": [],
+      "source": [
+        "# @title 2. Clone MV-Adapter Repository\n",
+        "import os\n",
+        "\n",
+        "if os.path.exists(\"MV-Adapter\"):\n",
+        "  !rm -rf MV-Adapter\n",
+        "\n",
+        "!git clone https://github.com/huanngzh/MV-Adapter.git\n",
+        "%cd MV-Adapter\n",
+        "\n",
+        "# Install any remaining specific requirements from the repo\n",
+        "!pip install -r requirements.txt --no-deps > /dev/null\n",
+        "\n",
+        "print(\"✅ Repository Cloned and Ready.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "step3_login"
+      },
+      "outputs": [],
+      "source": [
+        "# @title 3. Login to Hugging Face\n",
+        "# Required because SDXL 1.0 is a gated model.\n",
+        "from huggingface_hub import login\n",
+        "\n",
+        "# @markdown Paste your Hugging Face token below:\n",
+        "hf_token = \"\" # @param {type:\"string\"}\n",
+        "\n",
+        "if hf_token:\n",
+        "    login(token=hf_token)\n",
+        "else:\n",
+        "    print(\"⚠️ Please enter a token to proceed.\")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "step4_run"
+      },
+      "outputs": [],
+      "source": [
+        "# @title 4. Run MV-Adapter Demo\n",
+        "# This patch ensures the Gradio link is public (share=True)\n",
+        "\n",
+        "print(\"🚀 Patching demo for Public URL...\")\n",
+        "!sed -i 's/launch(server_name=\"0.0.0.0\", server_port=7860)/launch(share=True, server_name=\"0.0.0.0\", server_port=7860)/' scripts/gradio_demo_t2mv.py\n",
+        "\n",
+        "print(\"🚀 Launching... Please wait for the 'Running on public URL' link below.\")\n",
+        "\n",
+        "!python -m scripts.gradio_demo_t2mv --base_model \"stabilityai/stable-diffusion-xl-base-1.0\""
+      ]
+    }
+  ]
+}
